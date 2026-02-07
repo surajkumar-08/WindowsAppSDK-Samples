@@ -1,0 +1,167 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        },
+        {
+            "name": "base-vs",
+            "hidden": true,
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        },
+        {
+            "name": "x64-debug",
+            "displayName": "x64 Debug",
+            "description": "Build for x64 architecture in Debug mode",
+            "inherits": "base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
+            }
+        },
+        {
+            "name": "x64-release",
+            "displayName": "x64 Release",
+            "description": "Build for x64 architecture in Release mode",
+            "inherits": "base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
+            }
+        },
+        {
+            "name": "arm64-debug",
+            "displayName": "ARM64 Debug",
+            "description": "Build for ARM64 architecture in Debug mode",
+            "inherits": "base",
+            "architecture": {
+                "value": "arm64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "VCPKG_TARGET_TRIPLET": "arm64-windows"
+            }
+        },
+        {
+            "name": "arm64-release",
+            "displayName": "ARM64 Release",
+            "description": "Build for ARM64 architecture in Release mode",
+            "inherits": "base",
+            "architecture": {
+                "value": "arm64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "VCPKG_TARGET_TRIPLET": "arm64-windows"
+            }
+        },
+        {
+            "name": "x64-debug-vs",
+            "displayName": "x64 Debug (VS)",
+            "description": "Build for x64 architecture in Debug mode (Visual Studio generator)",
+            "inherits": "base-vs",
+            "architecture": {
+                "value": "x64",
+                "strategy": "set"
+            },
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
+            }
+        },
+        {
+            "name": "x64-release-vs",
+            "displayName": "x64 Release (VS)",
+            "description": "Build for x64 architecture in Release mode (Visual Studio generator)",
+            "inherits": "base-vs",
+            "architecture": {
+                "value": "x64",
+                "strategy": "set"
+            },
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows"
+            }
+        },
+        {
+            "name": "arm64-debug-vs",
+            "displayName": "ARM64 Debug (VS)",
+            "description": "Build for ARM64 architecture in Debug mode (Visual Studio generator)",
+            "inherits": "base-vs",
+            "architecture": {
+                "value": "ARM64",
+                "strategy": "set"
+            },
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "arm64-windows"
+            }
+        },
+        {
+            "name": "arm64-release-vs",
+            "displayName": "ARM64 Release (VS)",
+            "description": "Build for ARM64 architecture in Release mode (Visual Studio generator)",
+            "inherits": "base-vs",
+            "architecture": {
+                "value": "ARM64",
+                "strategy": "set"
+            },
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "arm64-windows"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "x64-debug",
+            "configurePreset": "x64-debug"
+        },
+        {
+            "name": "x64-release",
+            "configurePreset": "x64-release"
+        },
+        {
+            "name": "arm64-debug",
+            "configurePreset": "arm64-debug"
+        },
+        {
+            "name": "arm64-release",
+            "configurePreset": "arm64-release"
+        },
+        {
+            "name": "x64-debug-vs",
+            "configurePreset": "x64-debug-vs",
+            "configuration": "Debug"
+        },
+        {
+            "name": "x64-release-vs",
+            "configurePreset": "x64-release-vs",
+            "configuration": "Release"
+        },
+        {
+            "name": "arm64-debug-vs",
+            "configurePreset": "arm64-debug-vs",
+            "configuration": "Debug"
+        },
+        {
+            "name": "arm64-release-vs",
+            "configurePreset": "arm64-release-vs",
+            "configuration": "Release"
+        }
+    ]
+}

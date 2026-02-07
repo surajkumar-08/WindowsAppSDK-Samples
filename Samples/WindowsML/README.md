@@ -35,6 +35,12 @@ Windows ML enables high-performance, reliable inferencing of machine learning mo
 |--------|-------------|--------------|
 | [cpp-abi](cpp-abi/) | Direct ABI implementation using raw COM interfaces | Automatic ABI header generation, no projections |
 
+### CMake Samples
+
+| Sample | Description | Key Features |
+|--------|-------------|--------------|
+| [cmake/WinMLEpCatalog](cmake/WinMLEpCatalog/) | WinMLEpCatalog Native C API with CMake/vcpkg | Native C API, no WinRT dependencies, interactive shell |
+
 ### C# Samples
 
 #### Console Applications

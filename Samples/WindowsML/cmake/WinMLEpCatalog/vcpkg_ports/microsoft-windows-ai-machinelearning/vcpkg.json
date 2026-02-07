@@ -1,0 +1,20 @@
+{
+  "name": "microsoft-windows-ai-machinelearning",
+  "version": "2.0.233-experimental-gfb98279532",
+  "maintainers": "Microsoft Corporation",
+  "description": "Windows ML inference SDK with OnnxRuntime and DirectML.",
+  "homepage": "https://github.com/microsoft/windowsappsdk",
+  "license": "MIT",
+  "supports": "windows & (x64 | arm64)",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ],
+  "features": {
+    "experimental": {
+      "description": "Use experimental (preview) builds instead of stable releases."
+    }
+  }
+}

@@ -1,0 +1,25 @@
+# Build outputs
+out/
+build/
+
+# CMake cache
+CMakeCache.txt
+CMakeFiles/
+
+# vcpkg downloads
+vcpkg_installed/
+
+# Local package overrides (for development/testing)
+local_packages/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+
+# Compiled files
+*.exe
+*.dll
+*.pdb
+*.obj
+*.ilk
