@@ -2,7 +2,7 @@
 REM Copyright (C) Microsoft Corporation. All rights reserved.
 REM
 REM Simple batch wrapper for build.ps1
-REM Usage: build.cmd [Debug|Release] [x64|arm64] [Ninja|VisualStudio]
+REM Usage: build.cmd [Debug|Release|RelWithDebInfo|MinSizeRel] [x64|arm64] [Ninja|VisualStudio]
 REM
 
 setlocal

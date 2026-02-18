@@ -6,9 +6,6 @@ build/
 CMakeCache.txt
 CMakeFiles/
 
-# vcpkg downloads
-vcpkg_installed/
-
 # Local package overrides (for development/testing)
 local_packages/
 

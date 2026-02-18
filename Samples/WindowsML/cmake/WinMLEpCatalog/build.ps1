@@ -1,41 +1,39 @@
 # Copyright (C) Microsoft Corporation. All rights reserved.
 <#
 .SYNOPSIS
-    Builds the WinML EP Catalog Sample using CMake and vcpkg.
+    Builds the WinML EP Catalog Sample using CMake and a local NuGet package.
 
 .DESCRIPTION
     This script automates the build process for the WinMLEpCatalog sample.
     It handles:
-    - Checking prerequisites (CMake, vcpkg, Visual Studio)
-    - Setting up VCPKG_ROOT if not already configured
-    - Configuring and building the project using CMake presets
+    - Checking prerequisites (CMake, Visual Studio)
+    - Setting up Visual Studio developer environment
+    - Configuring and building the project using the NuGet CMake preset
 
 .PARAMETER Configuration
-    Build configuration: Debug or Release. Default: Debug
-
-.PARAMETER Platform
-    Target platform: x64 or arm64. Default: Auto-detect from host
+    Build configuration: Debug, Release, RelWithDebInfo, MinSizeRel. Default: RelWithDebInfo
 
 .PARAMETER Generator
-    Build generator: Auto, Ninja, or VisualStudio. Default: Auto (uses Ninja if installed)
+    Build generator: Ninja or VisualStudio. Default: Ninja
 
-.PARAMETER VcpkgRoot
-    Path to vcpkg installation. Default: Uses VCPKG_ROOT environment variable
+.PARAMETER NuGetPackage
+    Path to Microsoft.WindowsAppSDK.ML nupkg.
+    Default: .\Microsoft.WindowsAppSDK.ML.2.0.246-experimental.nupkg
 
 .PARAMETER Clean
-    If specified, removes the build directory before building.
+    If specified, reconfigures with `cmake --fresh` before building.
 
 .EXAMPLE
     .\build.ps1
-    # Builds Debug configuration for the current platform
+    # Builds RelWithDebInfo for the current platform
 
 .EXAMPLE
     .\build.ps1 -Configuration Release -Platform arm64
-    # Builds Release configuration for ARM64
+    # Builds Release for ARM64
 
 .EXAMPLE
-    .\build.ps1 -Generator VisualStudio
-    # Builds using the Visual Studio generator (no Ninja required)
+    .\build.ps1 -Generator VisualStudio -Configuration Debug
+    # Builds Debug using the Visual Studio generator
 
 .EXAMPLE
     .\build.ps1 -Clean -Configuration Debug
@@ -44,16 +42,16 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Debug',
+    [ValidateSet('Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel')]
+    [string]$Configuration = 'RelWithDebInfo',
     
     [ValidateSet('x64', 'arm64')]
     [string]$Platform,
 
-    [ValidateSet('Auto', 'Ninja', 'VisualStudio')]
-    [string]$Generator = 'Auto',
-    
-    [string]$VcpkgRoot,
+    [ValidateSet('Ninja', 'VisualStudio')]
+    [string]$Generator = 'Ninja',
+
+    [string]$NuGetPackage = 'Microsoft.WindowsAppSDK.ML.2.0.246-experimental.nupkg',
     
     [switch]$Clean
 )
@@ -150,19 +148,8 @@ if (-not $Platform) {
     Write-Host "Auto-detected platform: $Platform"
 }
 
-# Select generator
-if ($Generator -eq 'Auto') {
-    if (Test-CommandExists 'ninja') {
-        $Generator = 'Ninja'
-    }
-    else {
-        $Generator = 'VisualStudio'
-    }
-}
-
 # Determine preset name
-$presetSuffix = if ($Generator -eq 'VisualStudio') { '-vs' } else { '' }
-$PresetName = "$Platform-$($Configuration.ToLower())$presetSuffix"
+$PresetName = "nuget"
 Write-Host "Build preset: $PresetName"
 Write-Host "Generator: $Generator"
 
@@ -182,7 +169,7 @@ if (-not (Test-CommandExists 'cmake')) {
 $cmakeVersion = (cmake --version | Select-Object -First 1)
 Write-Host "  CMake: $cmakeVersion"
 
-# Check Ninja
+# Check Ninja (only required for Ninja generator)
 if ($Generator -eq 'Ninja') {
     if (Test-CommandExists 'ninja') {
         $ninjaVersion = (ninja --version)
@@ -193,76 +180,22 @@ if ($Generator -eq 'Ninja') {
         exit 1
     }
 }
-else {
-    if (Test-CommandExists 'ninja') {
-        $ninjaVersion = (ninja --version)
-        Write-Host "  Ninja: $ninjaVersion (not required for Visual Studio generator)"
-    }
-    else {
-        Write-Host "  Ninja: Not required (using Visual Studio generator)" -ForegroundColor Yellow
-    }
+
+# Check NuGet package
+$resolvedNuGetPackage = Resolve-Path (Join-Path $PSScriptRoot $NuGetPackage) -ErrorAction SilentlyContinue
+if (-not $resolvedNuGetPackage) {
+    $resolvedNuGetPackage = Resolve-Path $NuGetPackage -ErrorAction SilentlyContinue
 }
 
-# Check vcpkg
-if ($VcpkgRoot) {
-    $env:VCPKG_ROOT = $VcpkgRoot
-}
-
-# Always try to find the windows-ml submodule vcpkg first (preferred)
-$windowsMlVcpkg = Resolve-Path "$PSScriptRoot\..\..\..\..\..\..\external\vcpkg" -ErrorAction SilentlyContinue
-if ($windowsMlVcpkg -and (Test-Path "$windowsMlVcpkg\vcpkg.exe")) {
-    $env:VCPKG_ROOT = $windowsMlVcpkg.Path
-    Write-Host "  Using windows-ml vcpkg: $env:VCPKG_ROOT"
-}
-elseif (-not $env:VCPKG_ROOT -or -not (Test-Path "$env:VCPKG_ROOT\vcpkg.exe")) {
-    # Try to find vcpkg in common locations
-    $possiblePaths = @(
-        "$env:USERPROFILE\vcpkg",
-        "C:\vcpkg",
-        "C:\src\vcpkg"
-    )
-    
-    foreach ($path in $possiblePaths) {
-        $resolvedPath = Resolve-Path $path -ErrorAction SilentlyContinue
-        if ($resolvedPath -and (Test-Path "$resolvedPath\vcpkg.exe")) {
-            $env:VCPKG_ROOT = $resolvedPath.Path
-            Write-Host "  Found vcpkg at: $env:VCPKG_ROOT"
-            break
-        }
-    }
-}
-
-if (-not $env:VCPKG_ROOT -or -not (Test-Path "$env:VCPKG_ROOT\vcpkg.exe")) {
-    Write-ErrorMessage "vcpkg not found. Please set VCPKG_ROOT or use -VcpkgRoot parameter."
-    Write-Host "  To install vcpkg:" -ForegroundColor Gray
-    Write-Host "    git clone https://github.com/microsoft/vcpkg.git" -ForegroundColor Gray
-    Write-Host "    .\vcpkg\bootstrap-vcpkg.bat" -ForegroundColor Gray
-    Write-Host "    set VCPKG_ROOT=<path-to-vcpkg>" -ForegroundColor Gray
+if (-not $resolvedNuGetPackage) {
+    Write-ErrorMessage "NuGet package not found: $NuGetPackage"
+    Write-Host "  Place Microsoft.WindowsAppSDK.ML.2.0.246-experimental.nupkg in this folder or pass -NuGetPackage." -ForegroundColor Gray
     exit 1
 }
 
-Write-Host "  VCPKG_ROOT: $env:VCPKG_ROOT"
-
-# Bootstrap vcpkg if needed
-if (-not (Test-Path "$env:VCPKG_ROOT\vcpkg.exe")) {
-    Write-Step "Bootstrapping vcpkg..."
-    Push-Location $env:VCPKG_ROOT
-    try {
-        & .\bootstrap-vcpkg.bat
-        if ($LASTEXITCODE -ne 0) {
-            Write-ErrorMessage "Failed to bootstrap vcpkg"
-            exit 1
-        }
-    }
-    finally {
-        Pop-Location
-    }
-}
+Write-Host "  NuGet package: $resolvedNuGetPackage"
 
 Write-Success "Prerequisites check passed"
-
-# Save VCPKG_ROOT before entering VS environment (VS may override it)
-$savedVcpkgRoot = $env:VCPKG_ROOT
 
 # ============================================================================
 # Set up Visual Studio Developer Environment
@@ -275,10 +208,6 @@ if (-not (Enter-VsDevEnvironment -Arch $Platform)) {
     exit 1
 }
 
-# Restore VCPKG_ROOT (VS environment may have changed it)
-$env:VCPKG_ROOT = $savedVcpkgRoot
-Write-Host "  VCPKG_ROOT: $env:VCPKG_ROOT"
-
 Write-Success "VS Developer environment configured for $Platform"
 
 # ============================================================================
@@ -286,12 +215,7 @@ Write-Success "VS Developer environment configured for $Platform"
 # ============================================================================
 
 if ($Clean) {
-    Write-Step "Cleaning build directory..."
-    $buildDir = Join-Path $PSScriptRoot "out"
-    if (Test-Path $buildDir) {
-        Remove-Item -Recurse -Force $buildDir
-        Write-Host "  Removed: $buildDir"
-    }
+    Write-Step "Clean requested: configure will run with --fresh"
 }
 
 # ============================================================================
@@ -300,18 +224,31 @@ if ($Clean) {
 
 Write-Step "Configuring with CMake preset: $PresetName"
 
-Push-Location $PSScriptRoot
-try {
-    & cmake --preset $PresetName
-    if ($LASTEXITCODE -ne 0) {
-        Write-ErrorMessage "CMake configuration failed"
-        exit 1
-    }
-    Write-Success "Configuration complete"
+$buildDir = Join-Path $PSScriptRoot "out/build/$PresetName"
+$configureArgs = @(
+    '--preset', $PresetName,
+    '-S', $PSScriptRoot,
+    '-B', $buildDir,
+    "-DWINML_NUGET_PACKAGE=$($resolvedNuGetPackage.Path)"
+)
+
+if ($Clean) {
+    $configureArgs += '--fresh'
 }
-finally {
-    Pop-Location
+
+if ($Generator -eq 'VisualStudio') {
+    $configureArgs += @('-G', 'Visual Studio 17 2022', '-A', $Platform)
 }
+else {
+    $configureArgs += @('-G', 'Ninja', "-DCMAKE_BUILD_TYPE=$Configuration")
+}
+
+& cmake @configureArgs
+if ($LASTEXITCODE -ne 0) {
+    Write-ErrorMessage "CMake configuration failed"
+    exit 1
+}
+Write-Success "Configuration complete"
 
 # ============================================================================
 # Build
@@ -319,23 +256,12 @@ finally {
 
 Write-Step "Building..."
 
-Push-Location $PSScriptRoot
-try {
-    $buildArgs = @("out/build/$PresetName")
-    if ($Generator -eq 'VisualStudio') {
-        $buildArgs += @('--config', $Configuration)
-    }
-
-    & cmake --build @buildArgs
-    if ($LASTEXITCODE -ne 0) {
-        Write-ErrorMessage "Build failed"
-        exit 1
-    }
-    Write-Success "Build complete"
+& cmake --build $buildDir --config $Configuration
+if ($LASTEXITCODE -ne 0) {
+    Write-ErrorMessage "Build failed"
+    exit 1
 }
-finally {
-    Pop-Location
-}
+Write-Success "Build complete"
 
 # ============================================================================
 # Output Information
